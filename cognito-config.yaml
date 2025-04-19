@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Cognito User Pool for Happy Birthday Application'
+
+Resources:
+  HappyBirthdayUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: HappyBirthdayUserPool
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Required: true
+          Mutable: true
+          StringAttributeConstraints:
+            MinLength: "1"
+            MaxLength: "256"
+
+  HappyBirthdayUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: HappyBirthdayWebClient
+      UserPoolId: !Ref HappyBirthdayUserPool
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      PreventUserExistenceErrors: ENABLED
+
+Outputs:
+  UserPoolId:
+    Description: "ID of the Cognito User Pool"
+    Value: !Ref HappyBirthdayUserPool
+
+  UserPoolClientId:
+    Description: "ID of the Cognito User Pool Client"
+    Value: !Ref HappyBirthdayUserPoolClient 
