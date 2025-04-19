@@ -30,30 +30,32 @@ A beautiful, interactive birthday celebration web application built with Next.js
   - Amazon Cognito for authentication
   - AWS Amplify for hosting and CI/CD
 
-## 🚀 Getting Started
+## 🚀 Access Instructions
 
 ### Prerequisites
 
-- Node.js 18 or later
-- AWS CLI configured with appropriate credentials
-- AWS SAM CLI installed
+Before accessing the application, ensure you have the following installed:
+
+- [Node.js 18+](https://nodejs.org/) - JavaScript runtime
+- [AWS CLI](https://aws.amazon.com/cli/) - Command-line interface for AWS
+- [AWS SAM CLI](https://aws.amazon.com/serverless-sam-cli-install/) - Serverless Application Model CLI
 - npm or yarn package manager
 
-### Local Development
+### Local Development Access
 
-1. Clone the repository:
+1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/happy-birthday.git
-   cd happy-birthday
+   git clone https://github.com/Sanath1947/Happy_Birthday.git
+   cd Happy_Birthday
    ```
 
-2. Install dependencies:
+2. **Install dependencies:**
    ```bash
    npm install
    ```
 
-3. Set up environment variables:
-   Create a `.env.local` file with the following variables:
+3. **Set up environment variables:**
+   Create a `.env.local` file in the root directory with the following variables:
    ```
    NEXT_PUBLIC_API_URL=your-api-gateway-url
    NEXT_PUBLIC_REGION=your-aws-region
@@ -61,23 +63,68 @@ A beautiful, interactive birthday celebration web application built with Next.js
    NEXT_PUBLIC_USER_POOL_WEB_CLIENT_ID=your-cognito-client-id
    ```
 
-4. Run the development server:
+   **How to obtain these values:**
+   
+   - **NEXT_PUBLIC_REGION**: Your AWS region (e.g., `us-east-1`, `ap-south-1`)
+     - Run `aws configure get region` or check your AWS Console region
+   
+   - **NEXT_PUBLIC_USER_POOL_ID and NEXT_PUBLIC_USER_POOL_WEB_CLIENT_ID**:
+     - Deploy the Cognito User Pool using the provided script:
+       ```bash
+       chmod +x setup-aws.sh
+       ./setup-aws.sh
+       ```
+     - Or manually:
+       1. Go to AWS Console → Cognito
+       2. Create a new User Pool or select existing one
+       3. Note the User Pool ID from the top of the page
+       4. Go to "App integration" → "App client list"
+       5. Note the Client ID
+   
+   - **NEXT_PUBLIC_API_URL**:
+     - After deploying with SAM, the URL will be in the outputs
+     - Or find it in API Gateway console
+
+4. **Run the development server:**
    ```bash
    npm run dev
    ```
 
-### AWS Deployment
+5. **Access the application:**
+   Open your browser and navigate to `http://localhost:3000`
 
-1. Deploy the backend services:
+   **Troubleshooting local development:**
+   - **CORS issues**: Ensure your API Gateway has CORS enabled
+   - **Authentication failures**: Verify Cognito credentials are correct
+   - **Environment variables not loading**: Restart the development server
+
+### Deployed Application Access
+
+1. **Deploy backend services:**
    ```bash
    sam build
    sam deploy --guided
    ```
+   - Follow the prompts to complete deployment
+   - Note the API Gateway URL from the output
 
-2. Deploy the frontend using AWS Amplify:
-   - Connect your GitHub repository to AWS Amplify
+2. **Deploy frontend using AWS Amplify:**
+   - Go to [AWS Amplify Console](https://console.aws.amazon.com/amplify/home)
+   - Click "New app" → "Host web app"
+   - Connect your GitHub repository: `https://github.com/Sanath1947/Happy_Birthday.git`
+   - Select the main branch
    - Use the provided `amplify.yml` configuration
    - Deploy through the Amplify Console
+   - Note the Amplify app URL (e.g., `https://main.d123xyz.amplifyapp.com`)
+
+3. **Access the live application:**
+   - Open your browser and navigate to the Amplify app URL
+   - Sign in with your Cognito credentials
+
+   **Troubleshooting deployment:**
+   - **Amplify build failures**: Check build logs in Amplify Console
+   - **SAM deployment errors**: Review CloudFormation stack events
+   - **API Gateway issues**: Verify Lambda function permissions
 
 ## 📁 Project Structure
 
