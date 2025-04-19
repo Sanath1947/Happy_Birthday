@@ -1,0 +1,16 @@
+{
+  "hero": {
+    "title": "Our Journey Together",
+    "subtitle": "A celebration of our love story since October 10, 2020",
+    "cta": "Begin Our Journey"
+  },
+  "timeline": {
+    "title": "Our Story",
+    "events": {
+      "firstMeeting": {
+        "title": "First Meeting",
+        "description": "The day our paths crossed"
+      }
+    }
+  }
+} 
