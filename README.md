@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Our Journey Together - A Digital Love Story 💑
 
 A beautiful, interactive web application celebrating the love story between you and Vinisha, created as a special birthday gift. This immersive experience combines modern web technologies with personal touches to create a memorable digital journey.
@@ -855,3 +856,6 @@ The application is now ready for:
 
 Would you like me to provide any additional documentation or clarification on any part of the implementation?
 </rewritten_file>
+=======
+# Happy_Birthday
+>>>>>>> 87b182d2dd28b697c551e7f488b77c961f4f302a
