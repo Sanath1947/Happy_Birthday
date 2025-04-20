@@ -57,9 +57,10 @@ Before accessing the application, ensure you have the following installed:
    Create a `.env.local` file in the root directory with the following variables:
    ```
    NEXT_PUBLIC_API_URL=your-api-gateway-url
-   NEXT_PUBLIC_REGION=your-aws-region
-   NEXT_PUBLIC_USER_POOL_ID=your-cognito-user-pool-id
-   NEXT_PUBLIC_USER_POOL_WEB_CLIENT_ID=your-cognito-client-id
+   NEXT_PUBLIC_REGION=us-east-1
+   NEXT_PUBLIC_USER_POOL_ID=us-east-1_7TFyQZDsR
+   NEXT_PUBLIC_USER_POOL_WEB_CLIENT_ID=4f50c2tfuam77bnpdp4f451ev1
+   NEXT_PUBLIC_COGNITO_DOMAIN=us-east-17tfyqzdsr
    ```
 
    **Detailed Guide to Obtain Environment Variables:**
@@ -562,3 +563,14 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 📧 Contact
 
 For any questions or suggestions, please open an issue in the GitHub repository. 
+
+## 📄 Auth Config
+
+```
+export const cognitoAuthConfig = {
+  authority: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_7TFyQZDsR",
+  client_id: "4f50c2tfuam77bnpdp4f451ev1",
+  redirect_uri: "http://localhost:3000/auth/callback",
+  response_type: "code",
+  scope: "openid email phone",
+}; 
