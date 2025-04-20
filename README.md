@@ -176,26 +176,340 @@ Before accessing the application, ensure you have the following installed:
    - **Environment variables not loading**: Restart the development server
    - **S3 access denied**: Check bucket permissions and CORS configuration
 
+### Comprehensive AWS Deployment Guide
+
+This section provides a detailed guide for deploying the Happy Birthday Application using various AWS services.
+
+#### 1. Setting Up IAM Roles and Policies
+
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/)
+2. Navigate to IAM service
+3. Create the following roles:
+   - **HappyBirthdayAppRole**: For the application to access AWS services
+   - **HappyBirthdayDeployRole**: For CI/CD pipelines to deploy the application
+4. Attach the following policies to the roles:
+   - **HappyBirthdayAppRole**:
+     - AmazonS3FullAccess
+     - AmazonDynamoDBFullAccess
+     - AWSLambdaFullAccess
+     - AmazonAPIGatewayAdministrator
+   - **HappyBirthdayDeployRole**:
+     - AWSCodeDeployFullAccess
+     - AWSCodeBuildAdminAccess
+     - AmazonS3FullAccess
+     - AmazonEC2FullAccess
+     - ElasticLoadBalancingFullAccess
+     - AutoScalingFullAccess
+
+#### 2. Setting Up VPC
+
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/)
+2. Navigate to VPC service
+3. Click "Create VPC"
+4. Configure the VPC:
+   - Name: "HappyBirthdayVPC"
+   - IPv4 CIDR block: "10.0.0.0/16"
+   - Tenancy: Default
+5. Create subnets:
+   - Public subnet: "HappyBirthdayPublicSubnet" (10.0.1.0/24)
+   - Private subnet: "HappyBirthdayPrivateSubnet" (10.0.2.0/24)
+6. Create an Internet Gateway and attach it to the VPC
+7. Create a NAT Gateway in the public subnet
+8. Create route tables:
+   - Public route table: Route internet traffic (0.0.0.0/0) to the Internet Gateway
+   - Private route table: Route internet traffic (0.0.0.0/0) to the NAT Gateway
+9. Associate the route tables with the respective subnets
+
+#### 3. Setting Up S3 Buckets
+
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/)
+2. Navigate to S3 service
+3. Create the following buckets:
+   - **happy-birthday-media**: For storing user-uploaded media files
+   - **happy-birthday-artifacts**: For storing deployment artifacts
+   - **happy-birthday-logs**: For storing application logs
+4. Configure bucket settings:
+   - Enable versioning
+   - Configure lifecycle rules (e.g., move old versions to Glacier after 90 days)
+   - Configure CORS for the media bucket as described earlier
+
+#### 4. Setting Up EC2 Instances
+
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/)
+2. Navigate to EC2 service
+3. Click "Launch Instance"
+4. Configure the instance:
+   - Name: "HappyBirthdayAppServer"
+   - AMI: Amazon Linux 2
+   - Instance type: t3.medium (or appropriate size)
+   - Key pair: Create a new key pair
+   - Network settings: Select the VPC and public subnet
+   - Security group: Create a new security group with the following rules:
+     - Inbound: HTTP (80), HTTPS (443), SSH (22)
+     - Outbound: All traffic
+5. Launch the instance
+6. Connect to the instance via SSH and install the required software:
+   ```bash
+   sudo yum update -y
+   sudo yum install -y nodejs npm git nginx
+   ```
+
+#### 5. Setting Up Elastic Load Balancer (ELB)
+
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/)
+2. Navigate to EC2 service → Load Balancers
+3. Click "Create Load Balancer"
+4. Configure the load balancer:
+   - Name: "HappyBirthdayELB"
+   - Scheme: internet-facing
+   - IP address type: ipv4
+   - VPC: Select the HappyBirthdayVPC
+   - Mappings: Select at least two Availability Zones
+   - Security groups: Create a new security group with HTTP and HTTPS access
+5. Configure routing:
+   - Create a target group: "HappyBirthdayTG"
+   - Protocol: HTTP
+   - Port: 80
+   - Target type: Instance
+   - Health check path: "/"
+6. Register the EC2 instance with the target group
+7. Create a listener:
+   - Protocol: HTTP
+   - Port: 80
+   - Default action: Forward to HappyBirthdayTG
+
+#### 6. Setting Up Auto Scaling Group (ASG)
+
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/)
+2. Navigate to EC2 service → Auto Scaling Groups
+3. Click "Create Auto Scaling group"
+4. Configure the ASG:
+   - Name: "HappyBirthdayASG"
+   - Launch template: Create a new template based on the EC2 instance
+   - VPC: Select the HappyBirthdayVPC
+   - Subnets: Select the private subnets
+   - Advanced options: Attach to the HappyBirthdayELB
+5. Configure advanced options:
+   - Health check type: ELB
+   - Health check grace period: 300 seconds
+   - Desired capacity: 2
+   - Minimum capacity: 1
+   - Maximum capacity: 5
+6. Configure scaling policies:
+   - Add policy: Scale out when CPU utilization exceeds 70%
+   - Add policy: Scale in when CPU utilization is below 30%
+
+#### 7. Setting Up Lambda Functions
+
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/)
+2. Navigate to Lambda service
+3. Create the following functions:
+   - **HappyBirthdayGetMemories**: For retrieving memories
+   - **HappyBirthdayCreateMemory**: For creating new memories
+   - **HappyBirthdayProcessImage**: For processing uploaded images
+4. Configure each function:
+   - Runtime: Node.js 18.x
+   - Architecture: x86_64
+   - Execution role: HappyBirthdayAppRole
+   - VPC: Select the HappyBirthdayVPC and private subnets
+5. Upload the code for each function from the `lambda/` directory
+6. Configure environment variables:
+   - DYNAMODB_TABLE: "Memories"
+   - S3_BUCKET: "happy-birthday-media"
+
+#### 8. Setting Up CloudWatch
+
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/)
+2. Navigate to CloudWatch service
+3. Create the following dashboards:
+   - **HappyBirthdayDashboard**: For monitoring application metrics
+4. Create the following alarms:
+   - **HighCPUUtilization**: Alert when CPU utilization exceeds 80%
+   - **HighMemoryUtilization**: Alert when memory utilization exceeds 80%
+   - **HighErrorRate**: Alert when error rate exceeds 5%
+5. Configure log groups:
+   - **/happy-birthday/application**: For application logs
+   - **/happy-birthday/access**: For access logs
+   - **/happy-birthday/error**: For error logs
+
+#### 9. Setting Up CloudFront
+
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/)
+2. Navigate to CloudFront service
+3. Click "Create Distribution"
+4. Configure the distribution:
+   - Origin domain: Select the ELB
+   - Origin path: Leave blank
+   - Name: "HappyBirthdayDistribution"
+   - Viewer protocol policy: Redirect HTTP to HTTPS
+   - Allowed HTTP methods: GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE
+   - Cache policy: CachingOptimized
+   - Origin request policy: AllViewerExceptHostHeader
+5. Create a second distribution for the S3 bucket:
+   - Origin domain: Select the S3 bucket
+   - Origin access: Origin access control settings
+   - Viewer protocol policy: Redirect HTTP to HTTPS
+   - Allowed HTTP methods: GET, HEAD, OPTIONS
+   - Cache policy: CachingOptimized
+
+#### 10. Setting Up Route 53
+
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/)
+2. Navigate to Route 53 service
+3. Create a hosted zone:
+   - Domain name: "happybirthday.com" (or your domain)
+   - Type: Public hosted zone
+4. Create an A record:
+   - Name: Leave blank (apex domain)
+   - Value: Select the CloudFront distribution
+   - Routing policy: Simple routing
+5. Create a CNAME record:
+   - Name: "www"
+   - Value: Select the CloudFront distribution
+   - Routing policy: Simple routing
+
+#### 11. Setting Up CloudTrail
+
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/)
+2. Navigate to CloudTrail service
+3. Click "Create trail"
+4. Configure the trail:
+   - Name: "HappyBirthdayTrail"
+   - Storage location: Create new S3 bucket
+   - Log file SSE: Enabled
+   - Logs: All
+   - Data events: S3 and Lambda
+   - Insights events: Enabled
+
+#### 12. Setting Up AWS CodeCommit
+
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/)
+2. Navigate to CodeCommit service
+3. Click "Create repository"
+4. Configure the repository:
+   - Repository name: "HappyBirthday"
+   - Description: "Happy Birthday Application Repository"
+5. Clone the repository:
+   ```bash
+   git clone https://git-codecommit.region.amazonaws.com/v1/repos/HappyBirthday
+   cd HappyBirthday
+   git remote add origin https://git-codecommit.region.amazonaws.com/v1/repos/HappyBirthday
+   git add .
+   git commit -m "Initial commit"
+   git push -u origin main
+   ```
+
+#### 13. Setting Up AWS CodeBuild
+
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/)
+2. Navigate to CodeBuild service
+3. Click "Create build project"
+4. Configure the project:
+   - Project name: "HappyBirthdayBuild"
+   - Source: CodeCommit, HappyBirthday repository
+   - Environment: Managed image, Amazon Linux 2, Standard runtime
+   - Service role: HappyBirthdayDeployRole
+5. Configure buildspec:
+   - Create a `buildspec.yml` file in the root directory:
+     ```yaml
+     version: 0.2
+     
+     phases:
+       install:
+         runtime-versions:
+           nodejs: 18
+         commands:
+           - npm install
+       build:
+         commands:
+           - npm run build
+       post_build:
+         commands:
+           - aws s3 sync .next s3://happy-birthday-artifacts/build
+     ```
+
+#### 14. Setting Up AWS CodeDeploy
+
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/)
+2. Navigate to CodeDeploy service
+3. Click "Create application"
+4. Configure the application:
+   - Application name: "HappyBirthday"
+   - Compute platform: EC2/On-premises
+5. Create a deployment group:
+   - Deployment group name: "HappyBirthdayDeploymentGroup"
+   - Service role: HappyBirthdayDeployRole
+   - Deployment type: In-place
+   - Environment configuration: EC2 instances with tags
+   - Tag key: "Environment"
+   - Tag value: "Production"
+6. Create an `appspec.yml` file in the root directory:
+   ```yaml
+   version: 0.0
+   os: linux
+   files:
+     - source: /
+       destination: /var/www/html/happy-birthday
+   hooks:
+     BeforeInstall:
+       - location: scripts/before_install.sh
+         timeout: 300
+         runas: root
+     AfterInstall:
+       - location: scripts/after_install.sh
+         timeout: 300
+         runas: root
+   ```
+
+#### 15. Setting Up Elastic Beanstalk
+
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/console/)
+2. Navigate to Elastic Beanstalk service
+3. Click "Create application"
+4. Configure the application:
+   - Application name: "HappyBirthday"
+   - Platform: Node.js
+   - Platform branch: Node.js 18
+   - Platform version: Latest
+   - Application code: Upload your code
+   - VPC: Select the HappyBirthdayVPC
+   - Subnets: Select the private subnets
+5. Configure environment:
+   - Environment name: "HappyBirthday-Prod"
+   - Domain: happybirthday.region.elasticbeanstalk.com
+   - Load balanced: Yes
+   - Instance type: t3.medium
+   - Min instances: 1
+   - Max instances: 5
+6. Configure environment properties:
+   - NEXT_PUBLIC_API_URL: Your API Gateway URL
+   - NEXT_PUBLIC_REGION: Your AWS region
+   - NEXT_PUBLIC_USER_POOL_ID: Your Cognito User Pool ID
+   - NEXT_PUBLIC_USER_POOL_WEB_CLIENT_ID: Your Cognito Client ID
+
 ### Deployed Application Access
 
-1. **Deploy the application using AWS Amplify:**
-   - Go to [AWS Amplify Console](https://console.aws.amazon.com/amplify/home)
-   - Click "New app" → "Host web app"
-   - Connect your GitHub repository: `https://github.com/Sanath1947/Happy_Birthday.git`
-   - Select the main branch
-   - Use the provided `amplify.yml` configuration
-   - Deploy through the Amplify Console
-   - Note the Amplify app URL (e.g., `https://main.d123xyz.amplifyapp.com`)
+1. **Access the application through the domain:**
+   - Open your browser and navigate to `https://happybirthday.com` (or your custom domain)
+   - Sign in with your Cognito credentials
 
-2. **Access the live application:**
-   - Open your browser and navigate to the Amplify app URL
+2. **Access the application through Elastic Beanstalk:**
+   - Open your browser and navigate to `https://happybirthday.region.elasticbeanstalk.com`
+   - Sign in with your Cognito credentials
+
+3. **Access the application through CloudFront:**
+   - Open your browser and navigate to the CloudFront distribution URL
    - Sign in with your Cognito credentials
 
    **Troubleshooting deployment:**
-   - **Amplify build failures**: Check build logs in Amplify Console
+   - **Application not accessible**: Check Route 53, CloudFront, and ELB configurations
    - **Authentication issues**: Verify Cognito User Pool configuration
    - **API Gateway issues**: Check Lambda function permissions and API Gateway settings
    - **S3 access issues**: Verify bucket permissions and CORS configuration
+   - **EC2 instance issues**: Check security groups and instance health
+   - **Auto Scaling issues**: Verify scaling policies and capacity settings
+   - **CodeDeploy issues**: Check deployment logs and scripts
+   - **CloudWatch alarms**: Review alarm history and metrics
 
 ## 📁 Project Structure
 
@@ -209,8 +523,11 @@ happy-birthday/
 │   └── i18n/              # Internationalization
 ├── lambda/                # AWS Lambda functions
 ├── public/                # Static files
+├── scripts/               # Deployment scripts
 ├── amplify.yml           # AWS Amplify configuration
 ├── template.yaml         # AWS SAM template
+├── buildspec.yml         # AWS CodeBuild configuration
+├── appspec.yml           # AWS CodeDeploy configuration
 └── package.json          # Project dependencies
 ```
 
@@ -220,16 +537,19 @@ happy-birthday/
 - API endpoints secured with API Gateway
 - S3 bucket configured with appropriate CORS and security policies
 - Environment variables for sensitive information
+- IAM roles and policies for least privilege access
+- VPC for network isolation
+- CloudTrail for audit logging
+- CloudWatch for monitoring and alerting
 
 ## 🌐 Deployment
 
-The application is deployed using AWS Amplify for the frontend and backend services. The deployment process includes:
+The application can be deployed using various AWS services:
 
-1. Frontend deployment through AWS Amplify
-2. Backend services deployment using AWS Amplify
-3. Database setup in DynamoDB
-4. S3 bucket configuration for media storage
-5. CloudFront distribution setup
+1. **Simple Deployment**: AWS Amplify for frontend and backend
+2. **Standard Deployment**: EC2, ELB, ASG, and S3
+3. **Advanced Deployment**: Elastic Beanstalk with custom configuration
+4. **Enterprise Deployment**: Multi-region deployment with Route 53 and CloudFront
 
 ## 📝 License
 
